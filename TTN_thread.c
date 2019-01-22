@@ -174,7 +174,7 @@ void *TTN_thread(void *arg)
     }
 
     /* Use a medium datarate, e.g. BW125/SF9 in EU868 */
-    semtech_loramac_set_dr(&loramac, LORAMAC_DR_1); 
+    semtech_loramac_set_dr(&loramac, LORAMAC_DR_3); 
            
     while ( !joined ) {
         /* Start the Over-The-Air Activation (OTAA) procedure to retrieve the
@@ -210,9 +210,6 @@ void *TTN_thread(void *arg)
     /* We are Joined so we can loop now forever. */
     while ( 1 ) {
         
-        puts("[Sender Thread] Waiting for message...");
-        msg_receive(&msg);  
-        
         /* Trigger the message send */
         //puts("[Sender Thread] Sending message...");
         _send_message();
@@ -220,6 +217,9 @@ void *TTN_thread(void *arg)
         /* Schedule the next wake-up alarm */
         //puts("[Sender Thread] Setup next alarm...");
         _prepare_next_alarm();        
+
+        puts("[Sender Thread] Waiting for trigger message...");
+        msg_receive(&msg);  
          
        
     }
