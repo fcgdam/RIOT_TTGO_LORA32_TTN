@@ -35,7 +35,7 @@ REGION ?= EU868
 
 # Include the Semtech-loramac package
 USEPKG += semtech-loramac
-#USEPKG += u8g2
+USEPKG += u8g2
 
 FEATURES_REQUIRED += periph_gpio periph_i2c
 
