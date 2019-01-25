@@ -5,7 +5,7 @@ APPLICATION = TTN_DemoApp
 BOARD ?= esp32-ttgo-lora32-v1
 
 # Define here the type of node activation OTAA or ABP:  ABP=0, OTAA=1
-NODEACTIVATION ?= 0            
+NODEACTIVATION ?= 0
 # NODEACTIVATION ?= 1          
 
 # This has to be the absolute path to the RIOT base directory:
