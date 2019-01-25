@@ -9,6 +9,8 @@
 
 #include "xtimer.h"
 
+#include "Message.h"
+
 #include "periph/gpio.h"
 #include "periph/i2c.h"
 #include "u8g2.h"
@@ -32,6 +34,10 @@ static uint32_t pins_enabled = (
 );
 
 u8g2_t u8g2;
+
+/* For receiving data from the other threads. */
+OLed_msg ol_in_msg;
+msg_t m_in_msg;
 
 static const uint8_t logo[] = {
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03, 0xE0,
@@ -84,6 +90,21 @@ void OLed_Init(void) {
     puts("OLED initialized");
 }
 
+void TTN_screen(void) {
+  u8g2_SetFont( &u8g2,  u8g2_font_crox1cb_tf);
+  u8g2_DrawStr( &u8g2, 45, 20 ,  "TTN Node");
+}
+
+void TTN_joining(OLed_msg *olmsg) {
+  u8g2_SetFont( &u8g2,  u8g2_font_crox1cb_tf);
+  u8g2_DrawStr( &u8g2, 5, 10 ,  olmsg->str);
+}
+
+void TTN_joined(void) {
+  u8g2_SetFont( &u8g2,  u8g2_font_crox1cb_tf);
+  u8g2_DrawStr( &u8g2, 5, 10 ,  "Joined!");
+}
+
 
 /*
  * OLED thread - Thread that controls the OLED display
@@ -102,21 +123,30 @@ void *OLED_thread(void *arg)
 
             switch (screen) {
                 case 0:
-                    u8g2_DrawStr(&u8g2, 12, 22, "THIS");
+                    //u8g2_DrawStr(&u8g2, 12, 22, "THIS");
+                    TTN_screen();
                     break;
                 case 1:
-                    u8g2_DrawStr(&u8g2, 24, 22, "IS");
+                    //u8g2_DrawStr(&u8g2, 24, 22, "IS");
+                    TTN_joining(&ol_in_msg);
                     break;
                 case 2:
-                    u8g2_DrawBitmap(&u8g2, 0, 0, 8, 32, logo);
+                    //u8g2_DrawBitmap(&u8g2, 0, 0, 8, 32, logo);
+                    TTN_joined();
                     break;
             }
         } 
         while (u8g2_NextPage(&u8g2));
 
         /* show screen in next iteration */
-        screen = (screen + 1) % 3;
+        //screen = (screen + 1) % 3;
 
+        puts("Waiting for message for OLED control");
+        msg_receive( &m_in_msg);
+        memcpy( &ol_in_msg , m_in_msg.content.ptr , sizeof(OLed_msg) );
+
+        screen = ol_in_msg.cmd;
+        printf("[OLED] -> %s\n", ol_in_msg.str );
         /* sleep a little */
         xtimer_sleep(1);
      

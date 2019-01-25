@@ -11,6 +11,8 @@
 #include "semtech_loramac.h"
 
 #include "TTN_thread.h"
+#include "OLED_thread.h"
+#include "Message.h"
 
 /*
  *  TTN_Thread_Rcv - TTN Receiving Thread supporting variables.
@@ -26,6 +28,7 @@ static char TTN_thread_rcv_stack[THREAD_STACKSIZE_MAIN / 2];
 semtech_loramac_t loramac;
 
 static const char *message = "This is RIOT!";
+unsigned long frame = 0 ;
 
 /* Information for OTAA activation */
 uint8_t deveui[LORAMAC_DEVEUI_LEN] ;
@@ -51,6 +54,45 @@ msg_t msg_queue[MSG_QLEN];
         time->tm_min,
         time->tm_sec);
 }*/
+
+/*
+ * Message functions to send data to the OLED.
+ *
+ */
+
+OLed_msg olmsg;
+msg_t m_msg;
+
+void OL_joining(void) {
+
+   olmsg.cmd = 1;
+   olmsg.x = 10;
+   olmsg.y = 40;
+
+   if ( nodeactivation ) 
+       strcpy( olmsg.str , "Joining OTAA...");
+   else
+       strcpy( olmsg.str , "Joining ABP...");
+
+  m_msg.content.ptr = &olmsg;
+  msg_send( &m_msg , OLED_thread_pid ); 
+}
+
+void OL_joined(void) {
+
+   olmsg.cmd = 2;
+   olmsg.x = 10;
+   olmsg.y = 40;
+
+   if ( nodeactivation ) 
+       strcpy( olmsg.str , "Joined OTAA!");
+   else
+       strcpy( olmsg.str , "Joined ABP!");
+
+  m_msg.content.ptr = &olmsg;
+  msg_send( &m_msg , OLED_thread_pid ); 
+}
+
 
 void rtc_cb(void *arg)
 {
@@ -108,6 +150,8 @@ void _send_message(void)
     puts("Waiting for TX completion/rx data");
     semtech_loramac_recv(&loramac);
     printf("[Sender Thread] Sending done.\n");
+
+    frame++;
 }
 
 /*
@@ -176,6 +220,8 @@ void *TTN_thread(void *arg)
     /* Use a medium datarate, e.g. BW125/SF9 in EU868 */
     semtech_loramac_set_dr(&loramac, LORAMAC_DR_3); 
            
+    OL_joining();  // Update OLed
+
     while ( !joined ) {
         /* Start the Over-The-Air Activation (OTAA) procedure to retrieve the
          * generated device address and to get the network and application session
@@ -206,6 +252,7 @@ void *TTN_thread(void *arg)
     }
     
     puts("[Sender Thread] Join/ABP procedure succeeded"); 
+    OL_joined();
     
     /* We are Joined so we can loop now forever. */
     while ( 1 ) {
