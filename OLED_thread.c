@@ -65,6 +65,7 @@ static const uint8_t logo[] = {
 };
 
 uint32_t screen = 0;
+char framecnt[64];
 
 /*
  * Initialize the OLED screen.
@@ -117,7 +118,12 @@ void TTN_rxwindow(void) {
 
 void TTN_done(void) {
     u8g2_SetFont( &u8g2,  u8g2_font_crox1cb_tf);
-    u8g2_DrawStr( &u8g2, 5, 30 ,  "Done!");    
+    u8g2_DrawStr( &u8g2, 5, 10 ,  "Sending done!");    
+}
+
+void TTN_pframe(void) {
+    u8g2_SetFont( &u8g2,  u8g2_font_crox1cb_tf);
+    u8g2_DrawStr( &u8g2, 5, 50 ,  framecnt );    
 }
 
 /*
@@ -127,6 +133,8 @@ void TTN_done(void) {
 void *OLED_thread(void *arg) 
 {
     OLed_Init();
+    
+    strcpy(  framecnt , "Frame #: 0" );
 
     while (1) {
         u8g2_FirstPage(&u8g2);
@@ -150,16 +158,22 @@ void *OLED_thread(void *arg)
                     break;
                 case 3:
                     TTN_sending();
+                    TTN_pframe();
                     break;
                 case 4:
                     TTN_sending();
                     TTN_rxwindow();
+                    TTN_pframe();
                     break;
                 case 5:
-                    TTN_sending();
-                    TTN_rxwindow();
                     TTN_done();
+                    TTN_pframe();
                     break;                   
+                case 6:
+                    memcpy( framecnt , ol_in_msg.str, 64 );
+                    TTN_done();
+                    TTN_pframe();
+                    break;
             }
         } 
         while (u8g2_NextPage(&u8g2));

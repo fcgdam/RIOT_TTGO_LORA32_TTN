@@ -118,6 +118,18 @@ void OL_done(void) {
     msg_send( &m_msg , OLED_thread_pid );  
 }
 
+void OL_sendframecnt( void ) {
+    char buffer[64];
+    
+    sprintf( buffer , "Frame #: %ld " , frame );
+    strcpy( olmsg.str, buffer);
+
+    olmsg.cmd = 6;
+    m_msg.content.ptr = &olmsg;
+    msg_send( &m_msg , OLED_thread_pid );    
+}
+
+
 void rtc_cb(void *arg)
 {
     (void) arg;
@@ -184,6 +196,7 @@ void _send_message(void)
     OL_done();
 
     frame++;
+    OL_sendframecnt();
 }
 
 /*
