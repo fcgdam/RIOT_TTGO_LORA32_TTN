@@ -91,20 +91,34 @@ void OLed_Init(void) {
 }
 
 void TTN_screen(void) {
-  u8g2_SetFont( &u8g2,  u8g2_font_crox1cb_tf);
-  u8g2_DrawStr( &u8g2, 45, 20 ,  "TTN Node");
+    u8g2_SetFont( &u8g2,  u8g2_font_crox1cb_tf);
+    u8g2_DrawStr( &u8g2, 5, 40 ,  "TTN Node");
 }
 
 void TTN_joining(OLed_msg *olmsg) {
-  u8g2_SetFont( &u8g2,  u8g2_font_crox1cb_tf);
-  u8g2_DrawStr( &u8g2, 5, 10 ,  olmsg->str);
+    u8g2_SetFont( &u8g2,  u8g2_font_crox1cb_tf);
+    u8g2_DrawStr( &u8g2, 5, 10 ,  olmsg->str);
 }
 
 void TTN_joined(void) {
-  u8g2_SetFont( &u8g2,  u8g2_font_crox1cb_tf);
-  u8g2_DrawStr( &u8g2, 5, 10 ,  "Joined!");
+    u8g2_SetFont( &u8g2,  u8g2_font_crox1cb_tf);
+    u8g2_DrawStr( &u8g2, 5, 10 ,  "Joined!");
 }
 
+void TTN_sending(void) {
+    u8g2_SetFont( &u8g2,  u8g2_font_crox1cb_tf);
+    u8g2_DrawStr( &u8g2, 5, 10 ,  "Sending...");    
+}
+
+void TTN_rxwindow(void) {
+    u8g2_SetFont( &u8g2,  u8g2_font_crox1cb_tf);
+    u8g2_DrawStr( &u8g2, 5, 20 ,  "RX Window...");    
+}
+
+void TTN_done(void) {
+    u8g2_SetFont( &u8g2,  u8g2_font_crox1cb_tf);
+    u8g2_DrawStr( &u8g2, 5, 30 ,  "Done!");    
+}
 
 /*
  * OLED thread - Thread that controls the OLED display
@@ -134,6 +148,18 @@ void *OLED_thread(void *arg)
                     //u8g2_DrawBitmap(&u8g2, 0, 0, 8, 32, logo);
                     TTN_joined();
                     break;
+                case 3:
+                    TTN_sending();
+                    break;
+                case 4:
+                    TTN_sending();
+                    TTN_rxwindow();
+                    break;
+                case 5:
+                    TTN_sending();
+                    TTN_rxwindow();
+                    TTN_done();
+                    break;                   
             }
         } 
         while (u8g2_NextPage(&u8g2));

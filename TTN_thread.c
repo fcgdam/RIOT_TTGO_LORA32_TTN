@@ -14,16 +14,8 @@
 #include "OLED_thread.h"
 #include "Message.h"
 
-/*
- *  TTN_Thread_Rcv - TTN Receiving Thread supporting variables.
- * 
- */
-#define TTN_THREAD_RCV_PRIORITY         (THREAD_PRIORITY_MAIN - 2)
-kernel_pid_t TTN_thread_rcv_pid;
-static char TTN_thread_rcv_stack[THREAD_STACKSIZE_MAIN / 2];
-
 /* Messages are sent every 20s to respect the duty cycle on each channel */
-#define PERIOD              (5U)
+#define PERIOD              (20U)
 
 semtech_loramac_t loramac;
 
@@ -65,34 +57,66 @@ msg_t m_msg;
 
 void OL_joining(void) {
 
-   olmsg.cmd = 1;
-   olmsg.x = 10;
-   olmsg.y = 40;
+    olmsg.cmd = 1;
+    olmsg.x = 10;
+    olmsg.y = 40;
 
-   if ( nodeactivation ) 
-       strcpy( olmsg.str , "Joining OTAA...");
-   else
-       strcpy( olmsg.str , "Joining ABP...");
+    if ( nodeactivation ) 
+        strcpy( olmsg.str , "Joining OTAA...");
+    else
+        strcpy( olmsg.str , "Joining ABP...");
 
-  m_msg.content.ptr = &olmsg;
-  msg_send( &m_msg , OLED_thread_pid ); 
+    m_msg.content.ptr = &olmsg;
+    msg_send( &m_msg , OLED_thread_pid ); 
 }
 
 void OL_joined(void) {
 
-   olmsg.cmd = 2;
-   olmsg.x = 10;
-   olmsg.y = 40;
+    olmsg.cmd = 2;
+    olmsg.x = 10;
+    olmsg.y = 40;
 
-   if ( nodeactivation ) 
-       strcpy( olmsg.str , "Joined OTAA!");
-   else
-       strcpy( olmsg.str , "Joined ABP!");
+    if ( nodeactivation ) 
+    strcpy( olmsg.str , "Joined OTAA!");
+    else
+    strcpy( olmsg.str , "Joined ABP!");
 
-  m_msg.content.ptr = &olmsg;
-  msg_send( &m_msg , OLED_thread_pid ); 
+    m_msg.content.ptr = &olmsg;
+    msg_send( &m_msg , OLED_thread_pid ); 
 }
 
+void OL_sending(void) {
+    olmsg.cmd = 3;
+    olmsg.x = 10;
+    olmsg.y = 40;
+
+    strcpy( olmsg.str , "Sending Data...");
+
+    m_msg.content.ptr = &olmsg;
+    msg_send( &m_msg , OLED_thread_pid );  
+}
+
+void OL_rxwindow(void) {
+    olmsg.cmd = 4;
+    olmsg.x = 10;
+    olmsg.y = 40;
+
+    strcpy( olmsg.str , "Waiting Data...");
+
+    m_msg.content.ptr = &olmsg;
+    msg_send( &m_msg , OLED_thread_pid );  
+}
+
+void OL_done(void) {
+    olmsg.cmd = 5;
+    olmsg.x = 10;
+    olmsg.y = 40;
+
+    strcpy( olmsg.str , "Done!");
+
+    m_msg.content.ptr = &olmsg;
+    msg_send( &m_msg , OLED_thread_pid );  
+}
 
 void rtc_cb(void *arg)
 {
@@ -123,6 +147,7 @@ void _send_message(void)
     uint8_t res;
     
     printf("[Sender Thread] Sending message: %s\n", message);
+    OL_sending();
     /* The send call returns immediatly (is non blocking) */
     res = semtech_loramac_send(&loramac, (uint8_t *)message, strlen(message));
     
@@ -148,31 +173,17 @@ void _send_message(void)
     }
     /* Wait until the send cycle has completed */
     puts("Waiting for TX completion/rx data");
-    semtech_loramac_recv(&loramac);
+    OL_rxwindow();
+    
+    if (semtech_loramac_recv(&loramac) == SEMTECH_LORAMAC_DATA_RECEIVED) {
+        loramac.rx_data.payload[loramac.rx_data.payload_len] = 0;
+        printf("Data received: %s, port: %d\n",    (char *)loramac.rx_data.payload, loramac.rx_data.port);
+    }
     printf("[Sender Thread] Sending done.\n");
+    
+    OL_done();
 
     frame++;
-}
-
-/*
- * TTN Receiver thread - Receiver thread that receives downlink messages from the gateway, if any.
- *  The receive call is blocking.
- */
-
-void *TTN_thread_rcv( void *arg) {
-    
-    //xtimer_sleep(1);   /* Wait for the console output to settle. */
-    puts("[TTN_RCV_Thread] TTN Receive thread started!");
-
-    while (1) {
-        /* The semtech_loramac_recv call is blocking. */
-        if (semtech_loramac_recv(&loramac) == SEMTECH_LORAMAC_DATA_RECEIVED) {
-            loramac.rx_data.payload[loramac.rx_data.payload_len] = 0;
-            printf("Data received: %s, port: %d\n",    (char *)loramac.rx_data.payload, loramac.rx_data.port);
-        } else {
-            xtimer_sleep(1);
-        }
-    }   
 }
 
 /*
@@ -187,9 +198,6 @@ void *TTN_thread(void *arg)
     
     msg_init_queue(msg_queue, MSG_QLEN);
 
-    /* Start the TTN Receive thread */
-    TTN_thread_rcv_pid = thread_create( TTN_thread_rcv_stack, sizeof( TTN_thread_rcv_stack ),  TTN_THREAD_RCV_PRIORITY, 0,  TTN_thread_rcv , NULL, "TTNRcv");
-        
     xtimer_sleep(2);   /* Wait for the console output to settle. */
     
     /* Create the Loramac LORAWAN stack. */

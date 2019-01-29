@@ -18,9 +18,9 @@ BOARD_INSUFFICIENT_MEMORY := nucleo-f031k6 nucleo-f042k6 nucleo-l031k6
 # Pre-set this information so when the board boots up, a set of default parameters are already set
 # TTN information for OTTA activation.
 # WARNING: Make sure there are NO trailing spaces.
-DEVEUI ?= 0088F97413199AC4
-APPEUI ?= 70B3D57ED0015C26
-APPKEY ?= 7D2FC6FE238726B8142699A69E933023
+DEVEUI ?= 0000000000000000
+APPEUI ?= 0000000000000000
+APPKEY ?= 00000000000000000000000000000000
 
 # TTN information for ABP activation.
 DEVADDR ?= 00000000
