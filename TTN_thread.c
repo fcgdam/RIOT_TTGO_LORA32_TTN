@@ -187,10 +187,12 @@ void _send_message(void)
     puts("Waiting for TX completion/rx data");
     OL_rxwindow();
     
-    if (semtech_loramac_recv(&loramac) == SEMTECH_LORAMAC_DATA_RECEIVED) {
+    if ( (res = semtech_loramac_recv(&loramac)) == SEMTECH_LORAMAC_DATA_RECEIVED) {
         loramac.rx_data.payload[loramac.rx_data.payload_len] = 0;
+        printf("------------------------------------------------------------\n");
         printf("Data received: %s, port: %d\n",    (char *)loramac.rx_data.payload, loramac.rx_data.port);
     }
+    //printf(" ---------> [Sender Thread] Recv exit code: %d\n" , res);
     printf("[Sender Thread] Sending done.\n");
     
     OL_done();
@@ -216,7 +218,12 @@ void *TTN_thread(void *arg)
     /* Create the Loramac LORAWAN stack. */
     semtech_loramac_init(&loramac);
 
-    semtech_loramac_set_tx_mode(&loramac ,  LORAMAC_TX_UNCNF );
+    /* TTN sends uplink data on RX2 with SF9. 
+       Without this no data is received back from TTN.
+    */
+    semtech_loramac_set_rx2_dr(&loramac , LORAMAC_DR_2);
+
+    //semtech_loramac_set_tx_mode(&loramac ,  LORAMAC_TX_UNCNF );
 
     /* Convert identifiers and application key */
     fmt_hex_bytes(deveui, DEVEUI);
